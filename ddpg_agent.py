@@ -19,6 +19,7 @@ WEIGHT_DECAY = 0        # L2 weight decay
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print ("Device: ", device)
+
 class Agent():
     """Interacts with and learns from the environment."""
     
@@ -73,8 +74,8 @@ class Agent():
         return np.clip(action, -1, 1)
 
     def reset(self):
-        torch.save(self.actor_local.state_dict(), 'checkpoint_actor.pth')
-        torch.save(self.critic_local.state_dict(), 'checkpoint_critic.pth')
+#         torch.save(self.actor_local.state_dict(), 'checkpoint_actor.pth')
+#         torch.save(self.critic_local.state_dict(), 'checkpoint_critic.pth')
         self.noise.reset()
 
     def learn(self, experiences, gamma):
