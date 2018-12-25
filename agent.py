@@ -56,12 +56,34 @@ class DDPGAgent():
         self.noise = OUNoise(action_size, random_seed)
 
         # Replay memory
-        self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, random_seed)
+        self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, random_seed, self.device)
     
-    def load(self):
-        pass
-    def save(self):
-        pass
+    def save(self, checkpoint_file):
+        """Save the Q-network aprameters to the given file.
+        
+        Params
+        ======
+            checkpoint_file (string): path of the file into which to save the parameters
+        """
+        torch.save(self.actor_local.state_dict(), checkpoint_file+"1")
+        torch.save(self.actor_target.state_dict(), checkpoint_file+"2")
+        torch.save(self.critic_local.state_dict(), checkpoint_file+"3")
+        torch.save(self.critic_target.state_dict(), checkpoint_file+"4")
+
+    def load(self, checkpoint_file):
+        """Load the Q-network aprameters from the given file.
+        
+        Params
+        ======
+            checkpoint_file (string): path of the file from which to load the parameters
+        """
+        if os.path.exists(checkpoint_file+"1") is True:
+            self.actor_local.load_state_dict(torch.load(checkpoint_file+"1"))
+            self.actor_critic.load_state_dict(torch.load(checkpoint_file+"2"))
+            self.critic_local.load_state_dict(torch.load(checkpoint_file+"3"))
+            self.critic_critic.load_state_dict(torch.load(checkpoint_file+"4"))
+        else:
+            print ("File {} not found. Proceeding without.".format(checkpoint_file))
 
     def step(self, state, action, reward, next_state, done):
         """Save experience in replay memory, and use random sample from buffer to learn."""
@@ -168,13 +190,14 @@ class OUNoise:
 class ReplayBuffer:
     """Fixed-size buffer to store experience tuples."""
 
-    def __init__(self, action_size, buffer_size, batch_size, seed):
+    def __init__(self, action_size, buffer_size, batch_size, seed, device):
         """Initialize a ReplayBuffer object.
         Params
         ======
             buffer_size (int): maximum size of buffer
             batch_size (int): size of each training batch
         """
+        self.device = device
         self.action_size = action_size
         self.memory = deque(maxlen=buffer_size)  # internal memory (deque)
         self.batch_size = batch_size
@@ -188,7 +211,7 @@ class ReplayBuffer:
     
     def sample(self):
         """Randomly sample a batch of experiences from memory."""
-        experiences = random.sample(self.memory, k=self.batch_size)
+        experiences, device = random.sample(self.memory, k=self.batch_size), self.device
 
         states = torch.from_numpy(np.vstack([e.state for e in experiences if e is not None])).float().to(device)
         actions = torch.from_numpy(np.vstack([e.action for e in experiences if e is not None])).float().to(device)

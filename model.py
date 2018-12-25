@@ -46,12 +46,21 @@ class Actor(nn.Module):
 
     def forward(self, state):
         """Build an actor (policy) network that maps states -> actions."""
-        x = F.relu(self.fc1(self.bn1(state)))
-        x = F.relu(self.fc2(self.bn2(x)))
+        x = state
+
+        # x = self.bn1(x)
+        x = self.fc1(x)
+        x = F.relu(x)
+        # x = self.bn2(x)
+        x = self.fc2(x)
+        x = F.relu(x)
 
         # tanh produces a real-valued output R[-1, +1] that allows 
         # continuous action spaces
-        out = F.tanh(self.fc3(self.bn3(x)))
+        # out = self.bn3(x)
+        out = x
+        out = self.fc3(out)
+        out = F.tanh(out)
         return out
 
 
@@ -116,19 +125,27 @@ class Critic(nn.Module):
             tensor, which implies that it has a value between [-1, +1].
             It needs to be batch-normed as well.
         """
-        action_input =       self.action_fc1(self.action_bn1(state))
-        state_input = F.relu(self.state_fc1(self.state_bn1(state)))
+        # action = self.action_bn1(action)
+        action =        self.action_fc1(action)
+
+        # state  = self.state_bn1(state)
+        state  = self.state_fc1(state)
+        state  = F.relu(state)
 
         # Merge action_input and state_input  
-        x = torch.cat((state_input, action_input), dim=1)
-        x = F.relu(self.fc2(self.bn2(x)))
+        x = torch.cat((state, action), dim=1)
+        # x = self.bn2(x)
+        x = self.fc2(x)
+        x = F.relu(x)
 
         # The value-function is a real-valued number that is no constrained
         # any range, as is the case for continuous action selection.
         # This is because here we are not selecting an 'action', but rather, 
         # we're learning to approximate the reward function (i.e, to predict the 
         # expected reward, which is just an unconstrained real valued number R[-inf, +inf]
-        out = self.fc3(self.bn3(x))
+        out = x
+        # out = self.bn3(x)
+        out = self.fc3(out)
 
         # I we were to want to clip rewards, this may be the place to clip them.
         # out = clip(out)

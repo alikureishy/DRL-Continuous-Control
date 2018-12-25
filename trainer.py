@@ -39,30 +39,33 @@ class Trainer(object):
         print('Type of action space:', self.brain.vector_action_space_type)
         print('There are {} agents. Each observes a state with length: {} and takes an action of size {}'.format(self.num_agents, self.state_size, self.action_size))
         print('Type of state space:', self.brain.vector_observation_space_type)
-        print('The state for the first agent looks like:', self.sample_state[0])
+        print('State vector type: ', self.sample_state.shape)
+        print('The state for the first agent looks like:\n', self.sample_state)
 
-    def train_single(self, n_episodes=1000, plot_every=10):
+    def train_single(self, n_episodes=1000, plot_every=5):
         tracker = self.tracker_factory.createTracker(n_episodes)
         agent = self.agent_factory.createAgent(state_size=self.state_size, action_size=self.action_size, random_seed = self.seed)
         env, observation, brain_name = self.env, self.env.reset(train_mode=True)[self.brain_name], self.brain_name
-        state = observation.vector_observations[0]
-        agent.load()
-        for i_episode in range(1, n_episodes+1):
+        state = observation.vector_observations
+        # agent.load()
+        for i_episode in range(0, n_episodes):
             agent.reset_episode()
             while True:
                 action = agent.act(state)
+                # print("Action--> {}".format(action))
                 observation = env.step([action])[brain_name]
-                next_state, reward, done = observation.vector_observations[0], observation.rewards[0], observation.local_done[0]
+                next_state, reward, done = observation.vector_observations, observation.rewards[0], observation.local_done[0]
                 agent.step(state, action, reward, next_state, done)
                 tracker.step(i_episode, reward, done)
                 state = next_state
                 if done:
+                    tracker.print_episode_summary(i_episode)
                     break
-            tracker.print_episode_summary()
             if i_episode % plot_every == 0:
                 tracker.plot_performance()
 
-        agent.save()
+        # agent.save()
+        return tracker
 
     """
         Player for multi-agent game
