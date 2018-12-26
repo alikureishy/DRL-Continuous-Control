@@ -16,7 +16,7 @@ def main():
     trainer = Trainer(env, agent_factory, tracker_factory)
     trainer.describe_environment()
 
-    tracker = trainer.train_single(n_episodes=1000, plot_every=10)
+    agent, tracker = trainer.train_single(n_episodes=1000, plot_every=10)
     tracker.plot_performance()
 
     time.sleep(10000)

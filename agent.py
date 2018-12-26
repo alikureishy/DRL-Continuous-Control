@@ -3,31 +3,32 @@ import random
 import copy
 from collections import namedtuple, deque
 
-from model import Actor, Critic
+from model_test import Actor, Critic
+# from model import Actor, Critic
 
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-BUFFER_SIZE = int(1e6)  # replay buffer size
-BATCH_SIZE = 512         # minibatch size         512=10s/episode, 256=7s/episode, 128=6s/episode, 64=5s, 32=4.5s, 16=4s
+BATCH_SIZE = 1024      # minibatch size         512=10s/episode, 256=7s/episode, 128=6s/episode, 64=5s, 32=4.5s, 16=4s
+BUFFER_SIZE = int(BATCH_SIZE*50)  # replay buffer size
 GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
 LR_ACTOR = 1e-3         # learning rate of the actor 
 LR_CRITIC = 1e-3        # learning rate of the critic
-WEIGHT_DECAY = 0        # L2 weight decay
+WEIGHT_DECAY = 0.0        # L2 weight decay
 
 class AgentFactory(object):
     def __init__(self):
         pass
     
-    def createAgent(self, state_size, action_size, random_seed):
-        return DDPGAgent(state_size, action_size, random_seed)
+    def createAgent(self, state_size, action_size, random_seed, learn_every, iterations_per_learn):
+        return DDPGAgent(state_size, action_size, random_seed, learn_every, iterations_per_learn)
 
 class DDPGAgent():
     """Interacts with and learns from the environment."""
     
-    def __init__(self, state_size, action_size, random_seed):
+    def __init__(self, state_size, action_size, random_seed, learn_every, iterations_per_learn):
         """Initialize an Agent object.
         
         Params
@@ -41,6 +42,8 @@ class DDPGAgent():
         self.state_size = state_size
         self.action_size = action_size
         self.seed = random.seed(random_seed)
+        self.learn_every = learn_every
+        self.iterations_per_learn = iterations_per_learn
 
         # Actor Network (w/ Target Network)
         self.actor_local = Actor(state_size, action_size, random_seed).to(self.device)
@@ -93,9 +96,10 @@ class DDPGAgent():
         self.step_count += 1
 
         # Learn, if enough samples are available in memory
-        if (self.step_count % BATCH_SIZE == 0):
-            experiences = self.memory.sample()
-            self.learn(experiences, GAMMA)
+        if ((self.step_count>=BATCH_SIZE) and (self.step_count % self.learn_every == 0)):
+            for i in range(self.iterations_per_learn):
+                experiences = self.memory.sample()
+                self.learn(experiences, GAMMA)
 
     def act(self, state, add_noise=True):
         """Returns actions for given state as per current policy."""
@@ -139,6 +143,7 @@ class DDPGAgent():
         # Minimize the loss
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
+        torch.nn.utils.clip_grad_norm(self.critic_local.parameters(), 1)
         self.critic_optimizer.step()
 
         # ---------------------------- update actor ---------------------------- #

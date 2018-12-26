@@ -42,15 +42,18 @@ class Trainer(object):
         print('State vector type: ', self.sample_state.shape)
         print('The state for the first agent looks like:\n', self.sample_state)
 
-    def train_single(self, n_episodes=1000, plot_every=5):
+    def train_single(self, n_episodes=1000, max_steps=1001, plot_every=5, learn_every=20, iterations_per_learn=10, goal_score=30.0):
         tracker = self.tracker_factory.createTracker(n_episodes)
-        agent = self.agent_factory.createAgent(state_size=self.state_size, action_size=self.action_size, random_seed = self.seed)
+        agent = self.agent_factory.createAgent(self.state_size, self.action_size, self.seed, learn_every, iterations_per_learn)
         env, observation, brain_name = self.env, self.env.reset(train_mode=True)[self.brain_name], self.brain_name
         state = observation.vector_observations
+
+        tracker.started_training()
         # agent.load()
         for i_episode in range(0, n_episodes):
+            tracker.started_episode(i_episode)
             agent.reset_episode()
-            while True:
+            for t_step in range(0, max_steps):
                 action = agent.act(state)
                 # print("Action--> {}".format(action))
                 observation = env.step([action])[brain_name]
@@ -58,14 +61,28 @@ class Trainer(object):
                 agent.step(state, action, reward, next_state, done)
                 tracker.step(i_episode, reward, done)
                 state = next_state
+
+                # Exit episode if it is complete:
                 if done:
-                    tracker.print_episode_summary(i_episode)
+                    episode_end = time.time()
+                    tracker.ended_episode(i_episode, print_episode_summary=True)
                     break
+
+            # Visual feedback:
             if i_episode % plot_every == 0:
                 tracker.plot_performance()
+                # agent.save()
+
+            # Check if goal is met:
+            if (tracker.get_mean_centennial_score() >= goal_score):
+                print('Goal achieved! Episodes: {}, Average score (across all agents): {:.2f}, Time to train: {}min'
+                        .format(i_episode, tracker.get_averaged_score(), tracker.get_episode_duration()))
+                # agent.save()
+                break
+        tracker.ended_training()
 
         # agent.save()
-        return tracker
+        return agent, tracker
 
     """
         Player for multi-agent game

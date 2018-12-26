@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import time
 
 AVERAGING_WINDOW = 100
 
@@ -29,61 +30,110 @@ class PerformanceTracker(object):
         self.step_counts = np.zeros(num_episodes, dtype=np.float32)
         self.accuracies = np.zeros(num_episodes, dtype=np.float32)
         self.recalls = np.zeros(num_episodes, dtype=np.float32)
-        self.running_averages = np.zeros(num_episodes, dtype=np.float32)
+        self.centennial_averages = np.zeros(num_episodes, dtype=np.float32)
+        self.episode_durations = np.zeros(num_episodes, dtype=np.int32)
         self.num_episodes = num_episodes
+        self.train_start_time = None
+        self.train_duration = None
+        self.episode_start_time = None
+        self.current_episode = 0
         
+    def started_training(self):
+        self.train_start_time = time.time()
+
+    def started_episode(self, episode):
+        self.episode_start_time = time.time()
+
     def step(self, episode, reward, done):
         """Save reward of a step taken for a given episode 
         
         Params
         ======
             episode (int): the episode number
-            reward (int): reward obtained on the last step
-            done (bool): whether this was the last step of the episode
+            rewards numpy(int): rewards obtained on the last step
+            dones numpy(bool): what the status is of each of the agents
         """
         assert episode >= 0 and episode < self.num_episodes, "Invalid episode number: {}".format(episode)
 
+        self.current_episode = episode
         self.step_counts[episode] += 1
         if reward < 0.0:
             self.negatives[episode] += 1.0 * reward
             self.negative_counts[episode] += 1
-            print ("<({:.3f})".format(reward), end="")
+            # print ("<({:.3f})".format(reward), end="")
         elif reward == 0.0:
             self.neutral_counts[episode] += 1
-            print (".", end="")
+            # print (".", end="")
         elif reward > 0.0:
             self.positives[episode] += 1.0 * reward
             self.positive_counts[episode] += 1
-            print (">({:.3f})".format(reward), end="")
+            # print (">({:.3f})".format(reward), end="")
 
         if done:
             self.scores[episode] = self.positives[episode] + self.negatives[episode]
             self.accuracies[episode] = (1.0 * self.positive_counts[episode]) / self.step_counts[episode]
 
             if episode >= AVERAGING_WINDOW:
-                self.running_averages[episode] = np.mean(self.scores[episode-AVERAGING_WINDOW:episode])
+                self.centennial_averages[episode] = np.mean(self.scores[episode-AVERAGING_WINDOW:episode])
             else:
-                self.running_averages[episode] = np.mean(self.scores[0:episode])
-            print("|\n")
-        else:
-            if (self.step_counts[episode] % 100 == 0):
-                print("\n")
+                self.centennial_averages[episode] = np.mean(self.scores[0:episode])
+            # print("|\n")
+        # else:
+            # if (self.step_counts[episode] % 100 == 0):
+            #     print("\n")
+
+    def ended_episode(self, episode, print_episode_summary=False):
+        duration = time.time() - self.episode_start_time
+        self.episode_durations[episode] = duration
+        if print_episode_summary:
+            self.print_episode_summary(episode)
+    
+    def ended_training(self):
+        self.train_duration = self.train_start_time - time.time()
+
+    def get_mean_centennial_score(self, episode=None):
+        if episode == None:
+            episode = self.current_episode
+        return self.centennial_averages[episode]
+
+    # TODO:
+    def get_agent_mean_score(self, episode):
+        return self.scores[episode]
+
+    # TODO:
+    def get_agent_max_score(self, episode):
+        return self.scores[episode]
+
+    # TODO:
+    def get_agent_min_score(self, episode):
+        return self.scores[episode]
+
+    # TODO:
+    def get_episode_duration(self, episode):
+        return self.episode_durations[episode]
+
+    def get_training_duration(self):
+        return self.train_duration
 
     def plot_performance(self):
         """Plot various statistics captured by the tracker
         """
         episodes = np.arange(1, self.num_episodes+1)
         self.__plot__("Accuracy", episodes, "Episode", self.accuracies, "Accuracy", id=311)
-        self.__plot__("Scores", episodes, "Episode", self.scores, "Score", id=312) 
-        self.__plot__("{}-Episode Running Averages".format(AVERAGING_WINDOW), episodes, "Episode", self.running_averages, "{}-Episode Average Score".format(AVERAGING_WINDOW), id=313)
-        # self.__plot__("Durations", episodes, "Episode", self.step_counts, "Duration (# steps)", id=314)
+        self.__plot__("Averaged Episode Scores", episodes, "Episode", self.scores, "Score", id=312) 
+        self.__plot__("Centennial Averages", episodes, "Episode", self.centennial_averages, "{}-Episode Average Score".format(AVERAGING_WINDOW), id=321)
+        self.__plot__("Episode Step Counts", episodes, "Episode", self.step_counts, "# steps", id=322)
+        self.__plot__("Episode Durations", episodes, "Episode", self.episode_durations, "Duration (secs)", id=331)
         plt.show()
             
     def print_episode_summary(self, episode):
         i = episode
-        print('\rEpisode {}\tAverage Score: {:.3f}'.format(i, self.running_averages[i]))
-        print('\tCompleted in {} steps with {} +ve, {} -ve and {} neutral, rewards. Episode score: {}. Accuracy: {:.5f}'
-            .format(self.step_counts[i], self.positive_counts[i], self.negative_counts[i], self.neutral_counts[i], self.scores[i], self.accuracies[i]))
+        print('\rEpisode :: {}\tScores:\tCentennial: {:.3f}\tMean: {:.3f}\tMin: {:.3f}\tMax:{:.3f}\tDuration: {:.2f}s'
+                .format(i, self.get_mean_centennial_score(i), self.get_agent_mean_score(i), 
+                            self.get_agent_min_score(i), self.get_agent_max_score(i), self.get_episode_duration(i)))
+        # print('\tCompleted in {} steps with {} +ve, {} -ve and {} neutral, rewards. Episode score: {:.3f}. Accuracy: {:.3f}'
+        #     .format(self.step_counts[i], self.positive_counts[i], self.negative_counts[i], 
+        #         self.neutral_counts[i], self.scores[i], self.accuracies[i]))
 
     def __plot__(self, title, xvalues, xlabel, yvalues, ylabel, id=111):
         """Generic plot utility to plot the given values and labels

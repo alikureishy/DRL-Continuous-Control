@@ -68,7 +68,7 @@ class Actor(nn.Module):
 class Critic(nn.Module):
     """Critic (Value) Model."""
 
-    def __init__(self, state_size, action_size, seed, action_fc1_units=20, state_fc1_units=400, fc2_units=300, reward_size=1):
+    def __init__(self, state_size, action_size, seed, action_fc1_units=33, state_fc1_units=400, fc2_units=300, reward_size=1):
         """Initialize parameters and build model.
         Params
         ======
@@ -128,7 +128,8 @@ class Critic(nn.Module):
             It needs to be batch-normed as well.
         """
         # action = self.action_bn1(action)
-        action =        self.action_fc1(action)
+        action = self.action_fc1(action)
+        action = F.tanh(action)
 
         state  = self.state_fc1(state)
         state  = self.state_bn1(state)
