@@ -9,11 +9,11 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-BUFFER_SIZE = int(1e5)  # replay buffer size
-BATCH_SIZE = 64        # minibatch size
+BUFFER_SIZE = int(1e6)  # replay buffer size
+BATCH_SIZE = 512         # minibatch size         512=10s/episode, 256=7s/episode, 128=6s/episode, 64=5s, 32=4.5s, 16=4s
 GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
-LR_ACTOR = 1e-4         # learning rate of the actor 
+LR_ACTOR = 1e-3         # learning rate of the actor 
 LR_CRITIC = 1e-3        # learning rate of the critic
 WEIGHT_DECAY = 0        # L2 weight decay
 
@@ -56,6 +56,7 @@ class DDPGAgent():
         self.noise = OUNoise(action_size, random_seed)
 
         # Replay memory
+        self.step_count = 0
         self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, random_seed, self.device)
     
     def save(self, checkpoint_file):
@@ -89,9 +90,10 @@ class DDPGAgent():
         """Save experience in replay memory, and use random sample from buffer to learn."""
         # Save experience / reward
         self.memory.add(state, action, reward, next_state, done)
+        self.step_count += 1
 
         # Learn, if enough samples are available in memory
-        if len(self.memory) > BATCH_SIZE:
+        if (self.step_count % BATCH_SIZE == 0):
             experiences = self.memory.sample()
             self.learn(experiences, GAMMA)
 
