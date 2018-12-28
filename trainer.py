@@ -42,7 +42,7 @@ class Trainer(object):
         print('State vector type: ', self.sample_state.shape)
         print('The state for the first agent looks like:\n', self.sample_state)
 
-    def train_single(self, n_episodes=1000, max_steps=1001, plot_every=5, learn_every=20, iterations_per_learn=10, goal_score=30.0):
+    def train(self, n_episodes=1000, max_steps=1001, plot_every=5, learn_every=20, iterations_per_learn=10, goal_score=30.0):
         tracker = self.tracker_factory.createTracker(n_episodes, self.num_agents)
         agent = self.agent_factory.createAgent(self.state_size, self.action_size, self.seed, learn_every, iterations_per_learn)
         env, observation, brain_name = self.env, self.env.reset(train_mode=True)[self.brain_name], self.brain_name
@@ -51,46 +51,44 @@ class Trainer(object):
         # agent.load()
         for i_episode in range(0, n_episodes):
             tracker.started_episode(i_episode)
-            agent.reset_episode()
+            agent.reset()
             for t_step in range(0, max_steps):
                 actions = agent.act(states)
-                # print("Action--> {}".format(action))
                 observation = env.step(actions)[brain_name]
                 next_states, rewards, dones = observation.vector_observations, observation.rewards, observation.local_done
-                for state, action, reward, next_state, done in zip(states, actions, rewards, next_states, dones):
-                    agent.step(state, action, reward, next_state, done)
+                assert next_states.shape[0] == self.num_agents, "20 agents in environment, but received only {} observation states".format(next.shape[0])
+                agent.step(states, actions, rewards, next_states, dones)
                 tracker.step(i_episode, rewards, dones)
                 states = next_states
 
-                # Exit episode if it is complete:
                 if np.any(dones):
                     tracker.ended_episode(i_episode, print_episode_summary=True)
+                    # agent.save()
                     break
 
             # Visual feedback:
             if i_episode % plot_every == 0:
                 tracker.plot_performance()
-                # agent.save()
 
             # Check if goal is met:
             if (tracker.get_centennial_score() >= goal_score):
                 print('Goal achieved! Episodes: {}, Average score (across all agents): {:.2f}, Time to train: {}min'
                         .format(i_episode, tracker.get_averaged_score(), tracker.get_episode_duration()))
-                # agent.save()
                 break
         tracker.ended_training()
 
-        # agent.save()
         return agent, tracker
 
     """
         Player for multi-agent game
     """
-    def play_multiple(self):
+    def play(self):
         env, num_agents, action_size, brain_name = self.env, self.num_agents, self.action_size, self.brain_name
         observation = env.reset(train_mode=False)[brain_name]      # reset the environment    
         states = observation.vector_observations                   # get the current state (for each agent)
         scores = np.zeros(num_agents)                              # initialize the score (for each agent)
+        time.sleep(3)
+        agent = self.agent_factory.createAgent(self.state_size, self.action_size, self.seed)
         while True:
             actions = agent.act(states)                            # select an action (for each agent)
             observation = env.step(actions)[brain_name]               # send all actions to tne environment
@@ -100,21 +98,3 @@ class Trainer(object):
             if np.any(dones):                                      # exit loop if episode finished
                 break
         print('Total score (averaged over {} agents) this episode: {}'.format(num_agents, np.mean(scores)))
-
-    """
-        Player for multi-agent game
-    """
-    def play_single(self):
-        env, action_size, brain_name = self.env, self.action_size, self.brain_name
-        observation = env.reset(train_mode=False)[brain_name]       # reset the environment    
-        state = observation.vector_observations[0]                  # get the current state (for each agent)
-        score = 0                                                   # initialize the score (for each agent)
-        while True:
-            action = agent.act(state)                               # select an action (for each agent)
-            observation = env.step(action)[brain_name]              # send all actions to tne environment
-            next_state, reward, done = observation.vector_observations[0], observation.rewards[0], observation.local_done[0]
-            score += reward                                         # update the score (for each agent)
-            state = next_state                                      # roll over states to next time step
-            if done:                                                # exit loop if episode finished
-                break
-        print('Total score for this episode: {}'.format(score))

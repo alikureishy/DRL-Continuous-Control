@@ -81,7 +81,7 @@ class PerformanceTracker(object):
 
     def print_episode_summary(self, episode):
         i = episode
-        print (i, self.last_episode)
+        # print (i, self.last_episode)
         print('\rEpisode :: {}\tScores:\tCentennial: {:.3f}\tMean: {:.3f}\tMin: {:.3f}\tMax:{:.3f}\tDuration: {:.2f}s'
                 .format(i, self.get_centennial_score(i), self.get_temporal_mean_score(i), 
                             self.get_temporal_min_score(i), self.get_temporal_max_score(i), self.get_temporal_duration(i)))
@@ -93,7 +93,7 @@ class PerformanceTracker(object):
             self.print_episode_summary(episode)
     
     def ended_training(self):
-        self.training_duration = self.train_start_time - time.time()
+        self.training_duration = self.training_start_time - time.time()
 
     def get_centennial_score(self, episode=None):
         if episode == None:
@@ -141,7 +141,7 @@ class PerformanceTracker(object):
         # if (len(xs.shape) == 2 and len(ys.shape) == 2):
         fig = plt.figure()
         ax = fig.add_subplot(id)
-        print("Xs: ", xs.shape, "\tYs: ", ys.shape)
+        # print("Xs: ", xs.shape, "\tYs: ", ys.shape)
         ax.plot(xs, ys)
         ax.set(xlabel=xlabel, ylabel=ylabel, title=title)
 #         ax.grid()

@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import copy
+import os
 from collections import namedtuple, deque
 
 from model_test import Actor, Critic
@@ -10,25 +11,27 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-BATCH_SIZE = 1024      # minibatch size         512=10s/episode, 256=7s/episode, 128=6s/episode, 64=5s, 32=4.5s, 16=4s
-BUFFER_SIZE = int(BATCH_SIZE*50)  # replay buffer size
+BATCH_SIZE = 514      # minibatch size         512=10s/episode, 256=7s/episode, 128=6s/episode, 64=5s, 32=4.5s, 16=4s
+BUFFER_SIZE = int(1e6)  # replay buffer size
 GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
 LR_ACTOR = 1e-3         # learning rate of the actor 
 LR_CRITIC = 1e-3        # learning rate of the critic
-WEIGHT_DECAY = 0.0        # L2 weight decay
+WEIGHT_DECAY = 0.00        # L2 weight decay
+
+FILE_NAME = "model"
 
 class AgentFactory(object):
     def __init__(self):
         pass
     
-    def createAgent(self, state_size, action_size, random_seed, learn_every, iterations_per_learn):
+    def createAgent(self, state_size, action_size, random_seed, learn_every=None, iterations_per_learn=None):
         return DDPGAgent(state_size, action_size, random_seed, learn_every, iterations_per_learn)
 
 class DDPGAgent():
     """Interacts with and learns from the environment."""
     
-    def __init__(self, state_size, action_size, random_seed, learn_every, iterations_per_learn):
+    def __init__(self, state_size, action_size, random_seed, learn_every=None, iterations_per_learn=None):
         """Initialize an Agent object.
         
         Params
@@ -39,9 +42,11 @@ class DDPGAgent():
         """
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         print ("Agent is using: ", self.device)
+        self.save_file = FILE_NAME
         self.state_size = state_size
         self.action_size = action_size
-        self.seed = random.seed(random_seed)
+        random.seed(random_seed)
+        self.seed = random.randint(1, 1000)
         self.learn_every = learn_every
         self.iterations_per_learn = iterations_per_learn
 
@@ -62,41 +67,52 @@ class DDPGAgent():
         self.step_count = 0
         self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, random_seed, self.device)
     
-    def save(self, checkpoint_file):
+    def save(self):
         """Save the Q-network aprameters to the given file.
         
         Params
         ======
             checkpoint_file (string): path of the file into which to save the parameters
         """
-        torch.save(self.actor_local.state_dict(), checkpoint_file+"1")
-        torch.save(self.actor_target.state_dict(), checkpoint_file+"2")
-        torch.save(self.critic_local.state_dict(), checkpoint_file+"3")
-        torch.save(self.critic_target.state_dict(), checkpoint_file+"4")
+        torch.save(self.actor_local.state_dict(), self.save_file+"_actor_local.pth")
+        torch.save(self.actor_target.state_dict(), self.save_file+"_actor_target.pth")
+        torch.save(self.critic_local.state_dict(), self.save_file+"_critic_local.pth")
+        torch.save(self.critic_target.state_dict(), self.save_file+"_critic_target.pth")
 
-    def load(self, checkpoint_file):
+    def load(self):
         """Load the Q-network aprameters from the given file.
         
         Params
         ======
             checkpoint_file (string): path of the file from which to load the parameters
         """
-        if os.path.exists(checkpoint_file+"1") is True:
-            self.actor_local.load_state_dict(torch.load(checkpoint_file+"1"))
-            self.actor_critic.load_state_dict(torch.load(checkpoint_file+"2"))
-            self.critic_local.load_state_dict(torch.load(checkpoint_file+"3"))
-            self.critic_critic.load_state_dict(torch.load(checkpoint_file+"4"))
+        if os.path.exists(self.save_file+"_actor_local.pth") is True:
+            self.actor_local.load_state_dict(torch.load(self.save_file+"_actor_local.pth"))
+            self.actor_target.load_state_dict(torch.load(self.save_file+"_actor_target.pth"))
+            self.critic_local.load_state_dict(torch.load(self.save_file+"_critic_local.pth"))
+            self.critic_target.load_state_dict(torch.load(self.save_file+"_critic_target.pth"))
+            print ("Checkpoint files for '{}' FOUND and loaded by agent!".format(self.save_file))
         else:
-            print ("File {} not found. Proceeding without.".format(checkpoint_file))
+            print ("Checkpoint files for '{}' NOT found. Proceeding without.".format(self.save_file))
 
-    def step(self, state, action, reward, next_state, done):
+    def step(self, states, actions, rewards, next_states, dones):
         """Save experience in replay memory, and use random sample from buffer to learn."""
-        # Save experience / reward
-        self.memory.add(state, action, reward, next_state, done)
         self.step_count += 1
 
+        # If we have data from multiple agents, we will have 2-dimensions:
+        if len(states.shape) == 2:
+            assert (len(actions.shape)==2), "Mismatched step data. Expected a 2-D parameter but got: {}".format(type(actions))
+            assert (isinstance(rewards, list)), "Mismatched step data. Expected a 2-D parameter but got: {}".format(type(rewards))
+            assert (len(next_states.shape)==2), "Mismatched step data. Expected a 2-D parameter but got: {}".format(type(next_states))
+            assert (isinstance(dones, list)), "Mismatched step data. Expected a 2-D parameter but got: {}".format(type(dones))
+            for state, action, reward, next_state, done in zip(states, actions, rewards, next_states, dones):
+                self.memory.add(state, action, reward, next_state, done)
+        else:
+            # These are singular (scalars) not plurals (lists)
+            self.memory.add(states, actions, rewards, next_states, dones)
+
         # Learn, if enough samples are available in memory
-        if ((self.step_count>=BATCH_SIZE) and (self.step_count % self.learn_every == 0)):
+        if ((len(self.memory) > BATCH_SIZE) and (self.step_count % self.learn_every == 0)):
             for i in range(self.iterations_per_learn):
                 experiences = self.memory.sample()
                 self.learn(experiences, GAMMA)
@@ -112,10 +128,11 @@ class DDPGAgent():
             action += self.noise.sample()
         return np.clip(action, -1, 1)
 
-    def reset_episode(self):
+    def reset(self):
 #         torch.save(self.actor_local.state_dict(), 'checkpoint_actor.pth')
 #         torch.save(self.critic_local.state_dict(), 'checkpoint_critic.pth')
         self.noise.reset()
+        # self.step_count = 0
 
     def learn(self, experiences, gamma):
         """Update policy and value parameters using given batch of experience tuples.
