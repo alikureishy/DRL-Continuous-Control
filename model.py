@@ -70,6 +70,11 @@ class Critic(nn.Module):
 
     def __init__(self, state_size, action_size, seed, action_fc1_units=33, state_fc1_units=400, fc2_units=300, reward_size=1):
         """Initialize parameters and build model.
+            For Q-values, we need both the state and the action.
+            That (state-action) pair is obtained after the state is put through
+            one hidden layer and then concatenated with the action selected by
+            the Actor during evaluation.
+
         Params
         ======
             state_size (int): Dimension of each state
@@ -81,10 +86,6 @@ class Critic(nn.Module):
         super(Critic, self).__init__()
         self.seed = torch.manual_seed(seed)
 
-        # Since for Q-values, we have to utilize the selected action too
-        # That (state-action) pair is obtained after the state is put through
-        # one hidden layer and then concatenated with the selected action
-        # during evaluation
 
         # Action-normalizer:
         #   This may not be necessary, but I'm adding it here to support a
@@ -93,17 +94,19 @@ class Critic(nn.Module):
         #   to be concatenated with the batch-normed state-input (at the 
         #   2nd layer = fcs2)
 
+        # self.action_bn1 = nn.BatchNorm1d(action_size)
+        # self.action_fc1 = nn.Linear(action_size, action_fc1_units) # Right now this just gets another vector of action_size
+
+
         # Layer 1
         #   - State Input
-        self.state_fc1 = nn.Linear(state_size, state_fc1_units)
-        self.state_bn1 = nn.BatchNorm1d(state_fc1_units)
-
-        #   - Action Input
-        # self.action_bn1 = nn.BatchNorm1d(action_size)
-        self.action_fc1 = nn.Linear(action_size, action_fc1_units) # Right now this just gets another vector of action_size
+        # self.state_bn1 = nn.BatchNorm1d(state_size)
+        self.fc1 = nn.Linear(state_size, state_fc1_units)
+        self.bn1 = nn.BatchNorm1d(state_fc1_units)
 
         # Layer 2
-        merged_size = state_fc1_units+action_fc1_units;
+        # merged_size = state_fc1_units+action_fc1_units;
+        merged_size = state_fc1_units+action_size;
         # self.bn2 = nn.BatchNorm1d(merged_size)
         self.fc2 = nn.Linear(merged_size, fc2_units)
 
@@ -116,8 +119,8 @@ class Critic(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        self.action_fc1.weight.data.uniform_(*hidden_init(self.action_fc1))
-        self.state_fc1.weight.data.uniform_(*hidden_init(self.state_fc1))
+        # self.action_fc1.weight.data.uniform_(*hidden_init(self.action_fc1))
+        self.fc1.weight.data.uniform_(*hidden_init(self.fc1))
         self.fc2.weight.data.uniform_(*hidden_init(self.fc2))
         self.fc3.weight.data.uniform_(-3e-3, 3e-3)
 
@@ -128,11 +131,11 @@ class Critic(nn.Module):
             It needs to be batch-normed as well.
         """
         # action = self.action_bn1(action)
-        action = self.action_fc1(action)
-        action = F.tanh(action)
+        # action = self.action_fc1(action)
+        # action = F.tanh(action)
 
-        state  = self.state_fc1(state)
-        state  = self.state_bn1(state)
+        state  = self.fc1(state)
+        state  = self.bn1(state)
         state  = F.relu(state)
 
         # Merge action_input and state_input  
