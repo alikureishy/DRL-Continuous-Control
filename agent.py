@@ -14,7 +14,7 @@ import torch.optim as optim
 BATCH_SIZE = 514      # minibatch size         512=10s/episode, 256=7s/episode, 128=6s/episode, 64=5s, 32=4.5s, 16=4s
 BUFFER_SIZE = int(1e6)  # replay buffer size
 GAMMA = 0.99            # discount factor
-TAU = 1e-3              # for soft update of target parameters
+TAU = 0.2              # for soft update of target parameters
 LR_ACTOR = 1e-3         # learning rate of the actor 
 LR_CRITIC = 1e-3        # learning rate of the critic
 WEIGHT_DECAY = 0.00        # L2 weight decay
@@ -101,10 +101,6 @@ class DDPGAgent():
 
         # If we have data from multiple agents, we will have 2-dimensions:
         if len(states.shape) == 2:
-            assert (len(actions.shape)==2), "Mismatched step data. Expected a 2-D parameter but got: {}".format(type(actions))
-            assert (isinstance(rewards, list)), "Mismatched step data. Expected a 2-D parameter but got: {}".format(type(rewards))
-            assert (len(next_states.shape)==2), "Mismatched step data. Expected a 2-D parameter but got: {}".format(type(next_states))
-            assert (isinstance(dones, list)), "Mismatched step data. Expected a 2-D parameter but got: {}".format(type(dones))
             for state, action, reward, next_state, done in zip(states, actions, rewards, next_states, dones):
                 self.memory.add(state, action, reward, next_state, done)
         else:
@@ -207,7 +203,7 @@ class OUNoise:
     def sample(self):
         """Update internal state and return it as a noise sample."""
         x = self.state
-        dx = self.theta * (self.mu - x) + self.sigma * np.array([random.random() for i in range(len(x))])
+        dx = self.theta * (self.mu - x) + self.sigma * np.array([np.random.randn() for i in range(len(x))])
         self.state = x + dx
         return self.state
 
