@@ -14,16 +14,17 @@ def main():
     trainer = Trainer(env, agent_factory, tracker_factory)
     trainer.describe_environment()
     agent, tracker = trainer.train(n_episodes=200, plot_every=1000, learn_every=20, iterations_per_learn=10, goal_score=30.0)
-    # tracker.plot_performance()
-    # env.close()
     print("Training complete!")
+    time.sleep(5)
 
     print("Running the trained agent ...")
-    # env = UnityEnvironment(file_name='Reacher_Linux/Reacher.x86_64')
-    trainer.play()
+    trainer.play(agent)
     time.sleep(10)
     env.close()
     print("Game finished!")
+
+    print("Training performance")
+    tracker.plot_performance()
 
     time.sleep(5)
 

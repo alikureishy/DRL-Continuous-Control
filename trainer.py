@@ -73,7 +73,7 @@ class Trainer(object):
             # Check if goal is met:
             if (tracker.get_centennial_score() >= goal_score):
                 print('Goal achieved! Episodes: {}, Average score (across all agents): {:.2f}, Time to train: {}min'
-                        .format(i_episode, tracker.get_averaged_score(), tracker.get_episode_duration()))
+                        .format(i_episode, tracker.get_centennial_score(), tracker.get_episode_duration()))
                 break
         tracker.ended_training()
 
@@ -82,13 +82,12 @@ class Trainer(object):
     """
         Player for multi-agent game
     """
-    def play(self):
+    def play(self, agent):
         env, num_agents, action_size, brain_name = self.env, self.num_agents, self.action_size, self.brain_name
         observation = env.reset(train_mode=False)[brain_name]      # reset the environment    
         states = observation.vector_observations                   # get the current state (for each agent)
         scores = np.zeros(num_agents)                              # initialize the score (for each agent)
         time.sleep(3)
-        agent = self.agent_factory.createAgent(self.state_size, self.action_size, self.seed)
         while True:
             actions = agent.act(states)                            # select an action (for each agent)
             observation = env.step(actions)[brain_name]               # send all actions to tne environment
@@ -97,4 +96,5 @@ class Trainer(object):
             states = next_states                                   # roll over states to next time step
             if np.any(dones):                                      # exit loop if episode finished
                 break
+            time.sleep(0.01)
         print('Total score (averaged over {} agents) this episode: {}'.format(num_agents, np.mean(scores)))
