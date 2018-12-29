@@ -94,9 +94,19 @@ Also, the bottleneck for training was the CPU rather than the GPU, because the C
 
 ### Hyperparameters
 
-I found that for the soft-update, setting the value of TAU to be 1e-2 trained pretty well.
+The following hyperparameters were used:
+```
+BATCH_SIZE = 514        # minibatch size
+BUFFER_SIZE = int(1e6)  # replay buffer size
+GAMMA = 0.99            # discount factor
+TAU = 0.2               # for soft update of target parameters
+LR_ACTOR = 1e-3         # learning rate of the actor 
+LR_CRITIC = 1e-3        # learning rate of the critic
+WEIGHT_DECAY = 0.00     # weight decay
+```
 
-I set GAMMA to 0 because increasing this value would produce homogeneity in the learning process across the agents, which defeated the purpose of having multiple "agents" in the environment.
+To see an accelerated progression of the learning agent's performance during training, click on the image below:
+![Training-Process][Performance progression through training](https://youtu.be/DEhTNsQo6fM)
 
 ## Results
 
@@ -108,8 +118,6 @@ As the graphs below illustrate, the agent learned the problem space pretty well,
 
 ### Running 100-episode averages
 
-To see an accelerated progression of the learning agent's performance during training, click on the image below:
-![Training-Process][Performance progression through training](https://youtu.be/DEhTNsQo6fM)
 
 ## Future Enhancements
 
