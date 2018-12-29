@@ -26,15 +26,13 @@ class Actor(nn.Module):
         self.seed = torch.manual_seed(seed)
 
         # Layer 1
-        # self.bn1 = nn.BatchNorm1d(state_size)
         self.fc1 = nn.Linear(state_size, fc1_units)
+        self.bn1 = nn.BatchNorm1d(fc1_units)
 
         # Layer 2
-        self.bn2 = nn.BatchNorm1d(fc1_units)
         self.fc2 = nn.Linear(fc1_units, fc2_units)
 
         # Layer 3       
-        # self.bn3 = nn.BatchNorm1d(fc2_units)
         self.fc3 = nn.Linear(fc2_units, action_size) # Policy output expressed as action vector
 
         self.reset_parameters()
@@ -50,7 +48,7 @@ class Actor(nn.Module):
 
         # x = self.bn1(x)
         x = self.fc1(x)
-        x = self.bn2(x)
+        x = self.bn1(x)
         x = F.relu(x)
 
         x = self.fc2(x)
@@ -68,7 +66,7 @@ class Actor(nn.Module):
 class Critic(nn.Module):
     """Critic (Value) Model."""
 
-    def __init__(self, state_size, action_size, seed, action_fc1_units=33, state_fc1_units=400, fc2_units=300, reward_size=1):
+    def __init__(self, state_size, action_size, seed, fc1_units=400, fc2_units=300, reward_size=1):
         """Initialize parameters and build model.
             For Q-values, we need both the state and the action.
             That (state-action) pair is obtained after the state is put through
@@ -86,34 +84,17 @@ class Critic(nn.Module):
         super(Critic, self).__init__()
         self.seed = torch.manual_seed(seed)
 
-
-        # Action-normalizer:
-        #   This may not be necessary, but I'm adding it here to support a
-        #   model-free learner, just in case the action tensor has values 
-        #   that are outside the [-1,+1] case. This then allows it
-        #   to be concatenated with the batch-normed state-input (at the 
-        #   2nd layer = fcs2)
-
-        # self.action_bn1 = nn.BatchNorm1d(action_size)
-        # self.action_fc1 = nn.Linear(action_size, action_fc1_units) # Right now this just gets another vector of action_size
-
-
         # Layer 1
-        #   - State Input
-        # self.state_bn1 = nn.BatchNorm1d(state_size)
-        self.fc1 = nn.Linear(state_size, state_fc1_units)
-        self.bn1 = nn.BatchNorm1d(state_fc1_units)
+        self.fc1 = nn.Linear(state_size, fc1_units)
+        self.bn1 = nn.BatchNorm1d(fc1_units)
 
-        # Layer 2
-        # merged_size = state_fc1_units+action_fc1_units;
-        merged_size = state_fc1_units+action_size;
-        # self.bn2 = nn.BatchNorm1d(merged_size)
+        # Layer 2 (merge with action inputs)
+        merged_size = fc1_units+action_size;
         self.fc2 = nn.Linear(merged_size, fc2_units)
 
         # Layer 3 - a reward is a single-dimensional real-valued number
         #   Expressing the reward as a multi-dimension tensor would
         #   perhaps allow the network to learn a more nuanced reward mechanism
-        # self.bn3 = nn.BatchNorm1d(fc2_units)
         self.fc3 = nn.Linear(fc2_units, reward_size)  # The reward vector of REAL(-inf, +inf) numbers. Default is just size 1.
 
         self.reset_parameters()
@@ -130,17 +111,12 @@ class Critic(nn.Module):
             tensor, which implies that it has a value between [-1, +1].
             It needs to be batch-normed as well.
         """
-        # action = self.action_bn1(action)
-        # action = self.action_fc1(action)
-        # action = F.tanh(action)
-
         state  = self.fc1(state)
         state  = self.bn1(state)
         state  = F.relu(state)
 
         # Merge action_input and state_input  
         x = torch.cat((state, action), dim=1)
-        # x = self.bn2(x)
         x = self.fc2(x)
         x = F.relu(x)
 
@@ -150,10 +126,20 @@ class Critic(nn.Module):
         # we're learning to approximate the reward function (i.e, to predict the 
         # expected reward, which is just an unconstrained real valued number R[-inf, +inf]
         out = x
-        # out = self.bn3(x)
         out = self.fc3(out)
 
         # I we were to want to clip rewards, this may be the place to clip them.
         # out = clip(out)
 
         return out
+
+# For the Critic initializer:
+# Action-normalizer:
+#   This may not be necessary, but I'm adding it here to support a
+#   model-free learner, just in case the action tensor has values 
+#   that are outside the [-1,+1] case. This then allows it
+#   to be concatenated with the batch-normed state-input (at the 
+#   2nd layer = fcs2)
+# self.action_bn1 = nn.BatchNorm1d(action_size)
+# self.action_fc1 = nn.Linear(action_size, action_fc1_units) # Right now this just gets another vector of action_size
+
