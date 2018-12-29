@@ -13,6 +13,7 @@ def main():
     tracker_factory = TrackerFactory()
     trainer = Trainer(env, agent_factory, tracker_factory)
     trainer.describe_environment()
+    time.sleep(5)
     agent, tracker = trainer.train(n_episodes=200, plot_every=1000, learn_every=20, iterations_per_learn=10, goal_score=30.0)
     print("Training complete!")
     time.sleep(5)

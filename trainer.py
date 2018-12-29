@@ -72,8 +72,9 @@ class Trainer(object):
 
             # Check if goal is met:
             if (tracker.get_centennial_score() >= goal_score):
+                agent.save()
                 print('Goal achieved! Episodes: {}, Average score (across all agents): {:.2f}, Time to train: {}min'
-                        .format(i_episode, tracker.get_centennial_score(), tracker.get_episode_duration()))
+                        .format(i_episode, tracker.get_centennial_score(), tracker.get_training_duration()))
                 break
         tracker.ended_training()
 

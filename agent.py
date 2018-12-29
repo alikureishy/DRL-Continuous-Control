@@ -4,8 +4,7 @@ import copy
 import os
 from collections import namedtuple, deque
 
-from model_test import Actor, Critic
-# from model import Actor, Critic
+from model import Actor, Critic
 
 import torch
 import torch.nn.functional as F
