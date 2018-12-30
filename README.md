@@ -75,10 +75,10 @@ Encapsulates the [Deep Deterministic Policy Gradient](https://arxiv.org/pdf/1509
 - Noise generator: To add stochasticity to the actions selected by the agent
 - Learning: This is the meat of the ddpg implementation, utilizing 2 neural networks -- one for the Actor and another for the Critic.
 
-#### class Actor (model.py)
+#### Actor Network (model.py)
 A neural network used to directly learn the optimal policy (low variance, low bias) for the environment.
 
-#### class Critic (model.py)
+#### Critic Network (model.py)
 A neural network that learns the value-based function (low variance, low bias) of the environment, and is used as a stabilizing supervisor for the policy learned by the Actor. The agent also uses the Actor's selected actions and corresponding rewards to update the Critic's network (to approximate an accurate value function for the environment).
 
 ## Training
@@ -86,8 +86,11 @@ A neural network that learns the value-based function (low variance, low bias) o
 ### Single-Agent environment vs Multi-Agent environment
 A single-agent environment trained very slowly (almost negligibly).
 
-### GPU utilization
-Also, the bottleneck for training was the CPU rather than the GPU, because the CPU was doing most of the work with the environment simulation and copying data back-and-forth to the GPU, while the GPU's use was barely at 10%. So, I switched to the 20-agent environment, which not only generated more data but also increased the exploratory power of the agent without sacrificing exploitation of the learned policy at each step, because each agent would observe a different environment state and would therefore experience very varied experience tuples at each step. And, since the Actor and Critic models used to learn were shared among the agents, it ensured that agents remained at the same level after each learning step. This saw much faster convergence of the reinforcement learning algorithm. Also, since each step generated 20x more data, the CPU became less of a bottleneck because its cycles were used more efficiently. The GPU's utilization increased to ~25%, which was a significant improvement. I feel the reason this did not go past ~25% is because the data transfer between the CPU and GPU might have been the next bottleneck. This, however, requires more investigation and is listed as a future enhancement.
+Additionally, the GPU utilization was rather low. The bottleneck was the CPU, since it was spending a lot of cycles between training runs simulating the actions in the environment, and copying training data back-and-forth to the GPU. The GPU, instead, was barely being used, at 10%.
+
+Switching to the 20-agent environment improved the GPU utilization. Since each step generated 20x more data, the CPU's simulation of each step became less of a bottleneck per batch of training data. The GPU's utilization increased to ~25%, which was a significant improvement over the prior one. However, increasing this utilization requires more investigation and is listed as a future enhancement.
+
+Using 20 agents also boosted the 'exploratory' aspect of the DDPG algorithm (without sacrificing exploitation of the learned policy at each step). This was because each agent would observe a different environment state and would therefore experience very varied experience tuples using the same policy model. And, since experiences from all agents were used to train that shared policy model, these agents learned from each other at every training run. This saw much faster convergence to an optimal policy.
 
 ### Hyperparameters
 
@@ -102,8 +105,7 @@ LR_CRITIC = 1e-3        # learning rate of the critic
 WEIGHT_DECAY = 0.00     # weight decay
 ```
 
-To see an accelerated progression of the learning agent's performance during training, click on the image below:
-![Training-Process][Performance progression through training](https://youtu.be/DEhTNsQo6fM)
+Here is a sample of the [learning agent's improvement during training](https://youtu.be/DEhTNsQo6fM), which includes the episode-by-episode and 100-episode scores as well. As you can also see, the color of the balls gradually changes from light blue to green, as the training progresses.
 
 ## Results
 
@@ -123,7 +125,7 @@ This is a clean and smooth curve that agrees with the Average scores graph above
 
 ### Episode step counts
 
-This graph makes sense since all episodes in this environment run for exactly 1001 iterations, before the agent gets scored for that episode.
+This graph makes sense since all episodes in this environment run for exactly 1001 steps each, before the agent gets scored for that episode.
 
 ![Episode Step-Counts][Episode-Step-Counts]
 
