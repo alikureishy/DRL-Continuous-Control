@@ -78,21 +78,21 @@ class DDPGAgent():
         torch.save(self.critic_local.state_dict(), self.save_file+"_critic_local.pth")
         torch.save(self.critic_target.state_dict(), self.save_file+"_critic_target.pth")
 
-    def load(self):
-        """Load the Q-network aprameters from the given file.
+    # def load(self):
+    #     """Load the Q-network aprameters from the given file.
         
-        Params
-        ======
-            checkpoint_file (string): path of the file from which to load the parameters
-        """
-        if os.path.exists(self.save_file+"_actor_local.pth") is True:
-            self.actor_local.load_state_dict(torch.load(self.save_file+"_actor_local.pth"))
-            self.actor_target.load_state_dict(torch.load(self.save_file+"_actor_target.pth"))
-            self.critic_local.load_state_dict(torch.load(self.save_file+"_critic_local.pth"))
-            self.critic_target.load_state_dict(torch.load(self.save_file+"_critic_target.pth"))
-            print ("Checkpoint files for '{}' FOUND and loaded by agent!".format(self.save_file))
-        else:
-            print ("Checkpoint files for '{}' NOT found. Proceeding without.".format(self.save_file))
+    #     Params
+    #     ======
+    #         checkpoint_file (string): path of the file from which to load the parameters
+    #     """
+    #     if os.path.exists(self.save_file+"_actor_local.pth") is True:
+    #         self.actor_local.load_state_dict(torch.load(self.save_file+"_actor_local.pth"))
+    #         self.actor_target.load_state_dict(torch.load(self.save_file+"_actor_target.pth"))
+    #         self.critic_local.load_state_dict(torch.load(self.save_file+"_critic_local.pth"))
+    #         self.critic_target.load_state_dict(torch.load(self.save_file+"_critic_target.pth"))
+    #         print ("Checkpoint files for '{}' FOUND and loaded by agent!".format(self.save_file))
+    #     else:
+    #         print ("Checkpoint files for '{}' NOT found. Proceeding without.".format(self.save_file))
 
     def step(self, states, actions, rewards, next_states, dones):
         """Save experience in replay memory, and use random sample from buffer to learn."""
