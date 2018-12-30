@@ -6,16 +6,14 @@
 [Trained-Agent]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/TrainedAgent.png "Trained Agent"
 [Episode-Averages]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/Averages.png "Episode Averages (across 20 agents)"
 [Centennial-Averages]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/Centennials.png "Average score over 100 episodes"
-[Episode-Duration]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/Durations.png "Episode durations"
+[Episode-Durations]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/Durations.png "Episode durations"
 
 
 # Continuous Control -- Ball Controlling Arm
 
-| Before Training | After Training |
-|-----------------|----------------|
-
-
-![Trained-Agent][Trained-Agent](https://youtu.be/zLJ4UMCh7wc)
+|                           Before Training                             |                                   After Training                            |
+|-----------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| ![Untrained Agent][Untrained-Agent](https://youtu.be/zLJ4UMCh7wc)     | ![Trained Agent][Trained-Agent](https://www.youtube.com/watch?v=zLJ4UMCh7wc)           
 
 ## Overview
 
@@ -122,16 +120,19 @@ As the graphs below illustrate, the agent learned the problem space pretty well,
 
 The average scores for 20 agents, at the end of each episode, are plotted here. Not the steady increase until a score of ~38 is reach, after which the learning seems to plateau out. The maximum score that an agent can receive in an episode in this environment is 100 (1001 steps * 0.1 per step = 100). Clearly, 38 is not the highest score the agent should be able to hit, but for the sake of our goal above, it suffices.
 
+![Average Scores][Episode-Averages]
+
 ### Running 100-episode averages
 
 This is a clean and smooth curve that agrees with the Average scores graph above. Agents rapidly learn how to score points, and cross the mean score of 30 around the 35th episode itself, after which point the mean rises as far as 37.665 around episode 50. So, the 30 average in 106 episodes is accurate.
 
-
+![100-Episode Averages][Centennial-Averages]
 
 ### Episode step counts
 
 This graph makes sense since all episodes in this environment run for exactly 1001 iterations, before the agent gets scored for that episode.
 
+![Episode Step-Counts][Episode-Durations]
 
 
 ### Episode duration
