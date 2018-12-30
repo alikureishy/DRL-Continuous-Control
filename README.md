@@ -6,6 +6,7 @@
 [Trained-Agent]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/TrainedAgent.png "Trained Agent"
 [Episode-Averages]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/Averages.png "Episode Averages (across 20 agents)"
 [Centennial-Averages]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/Centennials.png "Average score over 100 episodes"
+[Episode-Step-Counts]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/StepCounts.png "Episode step counts"
 [Episode-Durations]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/Durations.png "Episode durations"
 
 
@@ -49,14 +50,7 @@ The environment used here has 20 agents, each contributing an independent observ
 
 ### Goal
 
-The average score of the learned policy (aeraged over 100 episodes, over all 20 agents) be 30+.
-
-## Installation & Setup
-
-I used a GPU (NVidia GeForce Titan Xp) for running most of the tensor-based operations of PyTorch, which greatly sped up the learning process.
-
-A requirements.txt file has been included for reproducing the appropriate conda environment to run this system. The Unity ML-Agents software also needs to be installed.
-
+The average score of the learned policy (averaged over 100 episodes, over all 20 agents) should be 30+.
 
 ## Design
 
@@ -92,7 +86,6 @@ A neural network that learns the value-based function (low variance, low bias) o
 ### Single-Agent environment vs Multi-Agent environment
 A single-agent environment trained very slowly (almost negligibly).
 
-
 ### GPU utilization
 Also, the bottleneck for training was the CPU rather than the GPU, because the CPU was doing most of the work with the environment simulation and copying data back-and-forth to the GPU, while the GPU's use was barely at 10%. So, I switched to the 20-agent environment, which not only generated more data but also increased the exploratory power of the agent without sacrificing exploitation of the learned policy at each step, because each agent would observe a different environment state and would therefore experience very varied experience tuples at each step. And, since the Actor and Critic models used to learn were shared among the agents, it ensured that agents remained at the same level after each learning step. This saw much faster convergence of the reinforcement learning algorithm. Also, since each step generated 20x more data, the CPU became less of a bottleneck because its cycles were used more efficiently. The GPU's utilization increased to ~25%, which was a significant improvement. I feel the reason this did not go past ~25% is because the data transfer between the CPU and GPU might have been the next bottleneck. This, however, requires more investigation and is listed as a future enhancement.
 
@@ -114,7 +107,7 @@ To see an accelerated progression of the learning agent's performance during tra
 
 ## Results
 
-As the graphs below illustrate, the agent learned the problem space pretty well, achieving the goal score in a little over 100 episodes.
+As the graphs below illustrate, the agent learned the problem space pretty well, achieving the goal score in a little over 100 episodes. See [here](https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/106_episode_run.log) for the training log.
 
 ### Average Agent Scores
 
@@ -124,7 +117,7 @@ The average scores for 20 agents, at the end of each episode, are plotted here. 
 
 ### Running 100-episode averages
 
-This is a clean and smooth curve that agrees with the Average scores graph above. Agents rapidly learn how to score points, and cross the mean score of 30 around the 35th episode itself, after which point the mean rises as far as 37.665 around episode 50. So, the 30 average in 106 episodes is accurate.
+This is a clean and smooth curve that agrees with the Average scores graph above. Based on the above graph, the agents rapidly learn how to score points, and cross an average score of 30 around the 35th episode, after which point the mean rises as far as 37.665 around episode 50. So, using those numbers, it is not hard to see that the centennial (averaged over 100-episodes) score of 30+ in 106 episodes is indeed accurate.
 
 ![100-Episode Averages][Centennial-Averages]
 
@@ -132,12 +125,14 @@ This is a clean and smooth curve that agrees with the Average scores graph above
 
 This graph makes sense since all episodes in this environment run for exactly 1001 iterations, before the agent gets scored for that episode.
 
-![Episode Step-Counts][Episode-Durations]
+![Episode Step-Counts][Episode-Step-Counts]
 
 
 ### Episode duration
 
 The time it took to complete each episode seems to have constantly risen through the training. The culprit here is most likely to be the sampling efficiency (or inefficiency) that (understandably) is linearly correlated with the length of the sample pool (O(n) runtime). In the case of the agent, its replay buffer is set to a size of 1e6 (=1,000,000 entries). As the agents gains experience, this replay buffer gets increasingly filled with experience tuples, until the ~50th episode, at which point the replay buffer would contain 50*1000*20 = exactly 1,000,000 entries! The 'Episode Duration' graph above supports this hypothesis, since the episode runtime hits a plateau at ~50th episode, after which it is maintained (since the buffer will not grow past 1,000,000 entries). 
+
+![Episode Step-Counts][Episode-Durations]
 
 ## Future Enhancements
 
