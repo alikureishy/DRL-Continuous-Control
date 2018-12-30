@@ -1,15 +1,21 @@
 
 [//]: # (Image References)
 
-[Trained-Agent]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/Learning-Environment-Examples.md#reacher "Trained Agent"
-[Training-Process]: https://user-images.githubusercontent.com/10624937/43851646-d899bf20-9b00-11e8-858c-29b5c2c94ccc.png "Crawler"
-[]
-[]
-[]
+[Untrained-Agent]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/UntrainedAgent.png "Untrained Agent"
+[Training-Process]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/Training.png "Training"
+[Trained-Agent]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/TrainedAgent.png "Trained Agent"
+[Episode-Averages]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/Averages.png "Episode Averages (across 20 agents)"
+[Centennial-Averages]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/Centennials.png "Average score over 100 episodes"
+[Episode-Duration]: https://github.com/safdark/DRL-Continuous-Control/blob/master/docs/img/Durations.png "Episode durations"
+
 
 # Continuous Control -- Ball Controlling Arm
 
-![Trained-Agent][Environment](https://youtu.be/zLJ4UMCh7wc)
+| Before Training | After Training |
+|-----------------|----------------|
+
+
+![Trained-Agent][Trained-Agent](https://youtu.be/zLJ4UMCh7wc)
 
 ## Overview
 
@@ -114,10 +120,23 @@ As the graphs below illustrate, the agent learned the problem space pretty well,
 
 ### Average Agent Scores
 
-### Episode duration
+The average scores for 20 agents, at the end of each episode, are plotted here. Not the steady increase until a score of ~38 is reach, after which the learning seems to plateau out. The maximum score that an agent can receive in an episode in this environment is 100 (1001 steps * 0.1 per step = 100). Clearly, 38 is not the highest score the agent should be able to hit, but for the sake of our goal above, it suffices.
 
 ### Running 100-episode averages
 
+This is a clean and smooth curve that agrees with the Average scores graph above. Agents rapidly learn how to score points, and cross the mean score of 30 around the 35th episode itself, after which point the mean rises as far as 37.665 around episode 50. So, the 30 average in 106 episodes is accurate.
+
+
+
+### Episode step counts
+
+This graph makes sense since all episodes in this environment run for exactly 1001 iterations, before the agent gets scored for that episode.
+
+
+
+### Episode duration
+
+The time it took to complete each episode seems to have constantly risen through the training. The culprit here is most likely to be the sampling efficiency (or inefficiency) that (understandably) is linearly correlated with the length of the sample pool (O(n) runtime). In the case of the agent, its replay buffer is set to a size of 1e6 (=1,000,000 entries). As the agents gains experience, this replay buffer gets increasingly filled with experience tuples, until the ~50th episode, at which point the replay buffer would contain 50*1000*20 = exactly 1,000,000 entries! The 'Episode Duration' graph above supports this hypothesis, since the episode runtime hits a plateau at ~50th episode, after which it is maintained (since the buffer will not grow past 1,000,000 entries). 
 
 ## Future Enhancements
 
@@ -136,3 +155,7 @@ This is not a very user-friendly application at the moment, since the focus has 
 ### Better GPU utilization
 
 The GPU capped at ~25% utilization with my present setup. A future enhancement would be to explore ways to increase that utilization while maintaining the CPU at its present level of utilization.
+
+### Deeper neural network models
+
+The models used in this exercise had only 1 hidden layer (3 fully-connected layers in total). The first layer had 400 neurons, and the second had 300. The third was essentially constrained by the output size of 4 (for the action selected by the Actor) and 1 (for the state-action value estimated by the Critic). Adding additional depth to this network, could perceivably reduce the bias that is causing the existing models to saturate at an agent score between 30 - 40, even though the max score possible is 100. 
