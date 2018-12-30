@@ -12,9 +12,9 @@
 
 # Continuous Control -- Ball Controlling Arm
 
-|                           Before Training                             |                                   After Training                            |
+|                           Before Training (Click for video)           |                    After Training (Click for video)                            |
 |-----------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| ![Untrained Agent][Untrained-Agent](https://youtu.be/zLJ4UMCh7wc)     | ![Trained Agent][Trained-Agent](https://www.youtube.com/watch?v=zLJ4UMCh7wc)           
+| [![Untrained Agent][Untrained-Agent]](https://youtu.be/zLJ4UMCh7wc)     | [![Trained Agent][Trained-Agent]](https://www.youtube.com/watch?v=zLJ4UMCh7wc)           
 
 ## Overview
 
